@@ -9,7 +9,7 @@ export const API_BASE_URL = isProduction
 
 export const ASSET_BASE_URL = isProduction 
   ? window.location.origin 
-  : 'https://node-mysql-api-lhbg.onrender.com';
+  : 'https://node-mysql-api-lhbg.onrender.com/api';
 
 /**
  * Sanitized response handler.
