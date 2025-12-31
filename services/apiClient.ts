@@ -5,11 +5,11 @@ const isProduction = window.location.hostname !== 'localhost' && window.location
 // In production, we assume the API is served from the same origin as the frontend
 export const API_BASE_URL = isProduction 
   ? `${window.location.origin}/api` 
-  : 'http://localhost:5000/api';
+  : 'https://node-mysql-api-lhbg.onrender.com/api';
 
 export const ASSET_BASE_URL = isProduction 
   ? window.location.origin 
-  : 'http://localhost:5000';
+  : 'https://node-mysql-api-lhbg.onrender.com';
 
 /**
  * Sanitized response handler.
