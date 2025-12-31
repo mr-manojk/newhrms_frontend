@@ -1,0 +1,7 @@
+{
+  "name": "NexusHR - Modern HRMS",
+  "description": "A comprehensive HR Management System for employee attendance, leave management, and administrative oversight.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
