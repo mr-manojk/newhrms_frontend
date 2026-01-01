@@ -7,7 +7,7 @@ export const NOTIFICATIONS_UPDATED_EVENT = 'nexushr_notifications_updated';
 export const systemService = {
   async checkHealth(): Promise<boolean> {
     try {
-      const res = await fetch(`${API_BASE_URL}/health`, { method: 'GET' });
+      const res: Response = await fetch(`${API_BASE_URL}/health`, { method: 'GET' });
       return res.ok;
     } catch {
       return false;
@@ -15,7 +15,7 @@ export const systemService = {
   },
 
   async getHolidays(): Promise<Holiday[]> {
-    const res = await safeFetch(`${API_BASE_URL}/holidays`, { cache: 'no-store' });
+    const res: Response | null = await safeFetch(`${API_BASE_URL}/holidays`, { cache: 'no-store' });
     if (!res) return [];
     const serverData = await handleResponse(res, "getHolidays");
     if (!serverData) return [];
@@ -27,7 +27,7 @@ export const systemService = {
   },
 
   async saveHolidays(holidays: Holiday[]): Promise<void> {
-    const res = await safeFetch(`${API_BASE_URL}/holidays/bulk`, {
+    const res: Response | null = await safeFetch(`${API_BASE_URL}/holidays/bulk`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ holidays })
@@ -36,14 +36,14 @@ export const systemService = {
   },
 
   async getConfig(): Promise<SystemConfig | null> {
-    const res = await safeFetch(`${API_BASE_URL}/config`, { cache: 'no-store' });
+    const res: Response | null = await safeFetch(`${API_BASE_URL}/config`, { cache: 'no-store' });
     if (!res) return null;
     const serverData = await handleResponse(res, "getConfig");
     return serverData || null;
   },
 
   async saveConfig(config: SystemConfig): Promise<void> {
-    const res = await safeFetch(`${API_BASE_URL}/config`, {
+    const res: Response | null = await safeFetch(`${API_BASE_URL}/config`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(config)
@@ -52,7 +52,7 @@ export const systemService = {
   },
 
   async getNotifications(): Promise<Notification[]> {
-    const res = await safeFetch(`${API_BASE_URL}/notifications`, { cache: 'no-store' });
+    const res: Response | null = await safeFetch(`${API_BASE_URL}/notifications`, { cache: 'no-store' });
     if (!res) return [];
     const serverData = await handleResponse(res, "getNotifications");
     if (!serverData || !Array.isArray(serverData)) return [];
@@ -63,7 +63,7 @@ export const systemService = {
   },
 
   async saveNotifications(notifications: Notification[]): Promise<void> {
-    const res = await safeFetch(`${API_BASE_URL}/notifications/bulk`, {
+    const res: Response | null = await safeFetch(`${API_BASE_URL}/notifications/bulk`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ notifications })

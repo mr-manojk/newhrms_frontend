@@ -14,7 +14,7 @@ export const ASSET_BASE_URL = USER_API_URL;
 /**
  * Sanitized response handler.
  */
-export const handleResponse = async (response: Response, context: string) => {
+export const handleResponse = async (response: Response, context: string): Promise<any> => {
   if (!response.ok) {
     if (!isProduction) {
       const errorDetail = await response.text();
@@ -22,7 +22,7 @@ export const handleResponse = async (response: Response, context: string) => {
         status: response.status,
         statusText: response.statusText,
         body: errorDetail
-      });
+      }); 
     }
     throw new Error(`Sync Error [${response.status}] in ${context}`);
   }
@@ -33,7 +33,7 @@ export const handleResponse = async (response: Response, context: string) => {
  * A safe fetch wrapper that catches network errors (backend offline) 
  * and returns null instead of throwing unhandled "Failed to fetch".
  */
-export const safeFetch = async (url: string, options?: RequestInit) => {
+export const safeFetch = async (url: string, options?: RequestInit): Promise<Response | null> => {
   try {
     const response = await fetch(url, options);
     return response;

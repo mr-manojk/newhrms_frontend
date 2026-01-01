@@ -32,7 +32,7 @@ const normalizeAttendance = (a: any): Attendance => {
 
 export const attendanceService = {
   async getAttendance(): Promise<Attendance[]> {
-    const res = await safeFetch(`${API_BASE_URL}/attendance`, { cache: 'no-store' });
+    const res: Response | null = await safeFetch(`${API_BASE_URL}/attendance`, { cache: 'no-store' });
     if (!res) return [];
     const serverData = await handleResponse(res, "getAttendance");
     return (serverData || []).map(normalizeAttendance);
@@ -53,7 +53,7 @@ export const attendanceService = {
       lateReason: a.lateReason || null
     }));
     
-    const response = await safeFetch(`${API_BASE_URL}/attendance/bulk`, {
+    const response: Response | null = await safeFetch(`${API_BASE_URL}/attendance/bulk`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ attendance: cleaned })

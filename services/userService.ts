@@ -4,7 +4,7 @@ import { API_BASE_URL, handleResponse, cleanDateStr, safeFetch } from './apiClie
 
 export const userService = {
   async getUsers(): Promise<User[]> {
-    const res = await safeFetch(`${API_BASE_URL}/users`, { cache: 'no-store' });
+    const res: Response | null = await safeFetch(`${API_BASE_URL}/users`, { cache: 'no-store' });
     if (!res) return [];
     const serverData = await handleResponse(res, "getUsers");
     return serverData || [];
@@ -18,7 +18,7 @@ export const userService = {
       probationEndDate: cleanDateStr(u.probationEndDate),
     }));
     
-    const res = await safeFetch(`${API_BASE_URL}/users/bulk`, {
+    const res: Response | null = await safeFetch(`${API_BASE_URL}/users/bulk`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ users: cleaned })
@@ -32,7 +32,7 @@ export const userService = {
     formData.append('category', 'avatar');
     formData.append('file', file, file.name);
     
-    const res = await safeFetch(`${API_BASE_URL}/upload`, {
+    const res: Response | null = await safeFetch(`${API_BASE_URL}/upload`, {
       method: 'POST',
       body: formData
     });
@@ -50,7 +50,7 @@ export const userService = {
     formData.append('docType', docType);
     formData.append('file', file, file.name); 
     
-    const res = await safeFetch(`${API_BASE_URL}/upload`, {
+    const res: Response | null = await safeFetch(`${API_BASE_URL}/upload`, {
       method: 'POST',
       body: formData
     });

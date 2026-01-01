@@ -4,7 +4,7 @@ import { API_BASE_URL, handleResponse, cleanDateStr, safeFetch } from './apiClie
 
 export const leaveService = {
   async getLeaves(): Promise<LeaveRequest[]> {
-    const res = await safeFetch(`${API_BASE_URL}/leaves`, { cache: 'no-store' });
+    const res: Response | null  = await safeFetch(`${API_BASE_URL}/leaves`, { cache: 'no-store' });
     if (!res) return [];
     const serverData = await handleResponse(res, "getLeaves");
     if (!serverData) return [];
@@ -17,7 +17,7 @@ export const leaveService = {
   },
 
   async saveLeaves(leaves: LeaveRequest[]): Promise<void> {
-    const res = await safeFetch(`${API_BASE_URL}/leaves/bulk`, {
+    const res: Response | null  = await safeFetch(`${API_BASE_URL}/leaves/bulk`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ leaves })
@@ -26,14 +26,14 @@ export const leaveService = {
   },
 
   async getBalances(): Promise<LeaveBalance[]> {
-    const res = await safeFetch(`${API_BASE_URL}/leave-balances`, { cache: 'no-store' });
+    const res: Response | null  = await safeFetch(`${API_BASE_URL}/leave-balances`, { cache: 'no-store' });
     if (!res) return [];
     const serverData = await handleResponse(res, "getBalances");
     return serverData || [];
   },
 
   async saveBalances(balances: LeaveBalance[]): Promise<void> {
-    const res = await safeFetch(`${API_BASE_URL}/leave-balances/bulk`, {
+    const res: Response | null  = await safeFetch(`${API_BASE_URL}/leave-balances/bulk`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ balances })
