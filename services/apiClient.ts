@@ -2,14 +2,14 @@
 // Determine if we are in production based on the hostname
 const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
 
-// In production, we assume the API is served from the same origin as the frontend
-export const API_BASE_URL = isProduction 
-  ? `${window.location.origin}/api` 
-  : 'https://node-mysql-api-lhbg.onrender.com/api';
+// The user provided a specific API URL running on Render
+const USER_API_URL = 'https://node-mysql-api-lhbg.onrender.com/api'; 
 
-export const ASSET_BASE_URL = isProduction 
-  ? window.location.origin 
-  : 'https://node-mysql-api-lhbg.onrender.com/api';
+  // Ensure the base URL is pointing correctly to the /api prefix
+export const API_BASE_URL = `${USER_API_URL}/api`;
+
+// Used for resolving asset paths (avatars, documents)
+export const ASSET_BASE_URL = USER_API_URL;
 
 /**
  * Sanitized response handler.
@@ -62,5 +62,7 @@ export const cleanDateStr = (d: any): string | null => {
 export const resolveAvatarUrl = (avatarPath: string | undefined) => {
   if (!avatarPath) return 'https://i.pravatar.cc/150?u=unknown';
   if (avatarPath.startsWith('http') || avatarPath.startsWith('data:')) return avatarPath;
-  return `${ASSET_BASE_URL}${avatarPath.startsWith('/') ? '' : '/'}${avatarPath}`;
+  // Standardize path separators and ensure ASSET_BASE_URL is prepended correctly
+  const path = avatarPath.startsWith('/') ? avatarPath : `/${avatarPath}`;
+  return `${ASSET_BASE_URL}${path}`;
 };
