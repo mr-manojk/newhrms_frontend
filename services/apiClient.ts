@@ -3,7 +3,7 @@
 const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
 
 // The user provided a specific API URL running on Render
-const USER_API_URL = 'https://node-mysql-api-lhbg.onrender.com/api'; 
+const USER_API_URL = 'https://node-mysql-api-lhbg.onrender.com'; 
 
   // Ensure the base URL is pointing correctly to the /api prefix
 export const API_BASE_URL = `${USER_API_URL}/api`;
