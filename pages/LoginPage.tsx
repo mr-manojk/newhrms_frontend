@@ -53,8 +53,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
           <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary-800 rounded-full blur-3xl opacity-50"></div>
           <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-primary-700 rounded-full blur-3xl opacity-30"></div>
           
-          <div className="w-16 h-16 bg-white rounded-2xl mx-auto mb-6 flex items-center justify-center text-primary-900 text-3xl font-black shadow-xl relative z-10">NX</div>
-          <h1 className="text-2xl font-bold tracking-tight relative z-10">NexusHR Cloud</h1>
+          <div className="w-16 h-16 bg-white rounded-2xl mx-auto mb-6 flex items-center justify-center text-primary-900 text-3xl font-black shadow-xl relative z-10">HR</div>
+          <h1 className="text-2xl font-bold tracking-tight relative z-10">MyHR Cloud</h1>
           <p className="text-primary-300 mt-2 relative z-10">Manage your workforce with ease</p>
         </div>
         
@@ -79,7 +79,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                   <input 
                     type="email"
                     required
-                    placeholder="name@nexushr.com"
+                    placeholder="name@myhr.com"
                     value={email}
                     onChange={e => {
                       setEmail(e.target.value);
@@ -129,13 +129,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                 >
                   Forgot password?
                 </button>
-              </div>
-
-              <div className="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
-                <p className="text-[10px] text-slate-500 font-medium text-center">
-                  <i className="fas fa-info-circle mr-1 text-primary-400"></i>
-                  Quick Access: Use <span className="font-bold text-slate-700">sarah.c@nexushr.com</span> / <span className="font-bold text-slate-700">password</span>
-                </p>
               </div>
             </form>
           ) : (
@@ -197,7 +190,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         <div className="p-6 bg-slate-50 border-t border-slate-100 text-center">
           <p className="text-xs text-slate-500">
             Secure corporate authentication.<br/>
-            &copy; 2024 Nexus HR Systems Inc.
+            &copy; 2026 MyHR Systems Inc.
           </p>
         </div>
       </div>

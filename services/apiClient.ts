@@ -3,14 +3,16 @@
 const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
 
 /**
- * For a portable full-stack app, we use relative paths.
- * - In dev (Vite): /api is proxied to localhost:5000 via vite.config.ts
- * - In prod (Render): The Express server serves /api directly on the same port.
+ * For the full-stack app:
+ * - In dev (Vite): /api is proxied to localhost:5000
+ * - In prod: We use the explicit backend URL provided to ensure cross-origin functionality
  */
-export const API_BASE_URL = 'https://node-mysql-api-lhbg.onrender.com/api';
+const PROD_BACKEND_URL = 'https://node-mysql-api-lhbg.onrender.com';
 
-// Used for resolving asset paths (avatars, documents)
-export const ASSET_BASE_URL = window.location.origin;
+export const API_BASE_URL = isProduction ? `${PROD_BACKEND_URL}/api` : '/api';
+
+// Base URL for resolving assets like uploads
+export const ASSET_BASE_URL = isProduction ? PROD_BACKEND_URL : window.location.origin;
 
 /**
  * Sanitized response handler.
@@ -22,18 +24,16 @@ export const handleResponse = async (response: Response, context: string): Promi
 
   if (!response.ok) {
     const errorBody = await response.text();
-    console.group(`🔴 NexusHR Server Error [${response.status}]`);
+    console.group(`🔴 MyHR Server Error [${response.status}]`);
     console.error(`Context: ${context}`);
     console.error(`Endpoint: ${response.url}`);
-    console.error(`Content-Type: ${contentType}`);
     
     try {
       if (isJson) {
         const jsonError = JSON.parse(errorBody);
         console.error('Server Message:', jsonError.message || jsonError.error || 'No message provided');
-        if (jsonError.code) console.error('Error Code:', jsonError.code);
       } else {
-        console.error('HTML/Text Error Body:', errorBody.substring(0, 200) + (errorBody.length > 200 ? '...' : ''));
+        console.error('Non-JSON Error Body received.');
       }
     } catch {
       console.error('Raw Error Body:', errorBody);
@@ -45,32 +45,38 @@ export const handleResponse = async (response: Response, context: string): Promi
 
   if (!isJson) {
     const text = await response.text();
-    console.warn(`⚠️ Unexpected non-JSON response from ${response.url} (Type: ${contentType})`);
-    // If it's HTML, it's likely a 404 or a misrouted request
-    if (text.trim().startsWith('<!DOCTYPE html>') || text.trim().startsWith('<html')) {
-      throw new Error(`${context} failed: Received HTML instead of JSON. The server might be misconfigured or the route does not exist.`);
+    const isHtml = text.trim().startsWith('<!DOCTYPE html>') || text.trim().startsWith('<html');
+    
+    if (isHtml) {
+      console.warn(`⚠️ MyHR Connectivity Issue: Fetch to ${response.url} returned HTML. This usually means the backend server is unreachable or misconfigured.`);
+      throw new Error(`SERVER_OFFLINE: ${context} received HTML instead of JSON.`);
     }
-    return text; // Fallback for text/plain
+    return text;
   }
 
   try {
     return await response.json();
   } catch (e) {
-    const raw = await response.text();
-    console.error('Failed to parse JSON response:', raw);
     throw new Error(`${context} failed: Response was marked as JSON but could not be parsed.`);
   }
 };
 
 /**
- * A safe fetch wrapper that catches network errors (backend offline).
+ * A safe fetch wrapper that catches network errors.
  */
 export const safeFetch = async (url: string, options?: RequestInit): Promise<Response | null> => {
   try {
-    const response = await fetch(url, options);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
     return response;
   } catch (error) {
-    console.warn(`🌐 Connectivity Note: Backend at ${url} is unreachable. Check network or server status.`);
     return null;
   }
 };
@@ -94,9 +100,18 @@ export const cleanDateStr = (d: any): string | null => {
   }
 };
 
-export const resolveAvatarUrl = (avatarPath: string | undefined) => {
-  if (!avatarPath) return 'https://i.pravatar.cc/150?u=unknown';
-  if (avatarPath.startsWith('http') || avatarPath.startsWith('data:')) return avatarPath;
-  const path = avatarPath.startsWith('/') ? avatarPath : `/${avatarPath}`;
-  return `${ASSET_BASE_URL}${path}`;
+/**
+ * Resolves avatar and document URLs safely.
+ * Points to the remote backend in production instead of the frontend origin.
+ */
+export const resolveAvatarUrl = (path: string | undefined) => {
+  if (!path) return 'https://i.pravatar.cc/150?u=unknown';
+  if (path.startsWith('http') || path.startsWith('data:')) return path;
+  
+  // Clean the path to ensure it's a valid relative path
+  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+  
+  // In development, Vite proxy handles /uploads locally.
+  // In production, we explicitly point to the remote backend.
+  return `${ASSET_BASE_URL}/${cleanPath}`;
 };

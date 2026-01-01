@@ -29,7 +29,7 @@ export const userService = {
   async uploadAvatar(file: File, username: string): Promise<string> {
     const formData = new FormData();
     formData.append('username', username);
-    formData.append('category', 'avatar');
+    formData.append('category', 'userimage');
     formData.append('file', file, file.name);
     
     const res: Response | null = await safeFetch(`${API_BASE_URL}/upload`, {

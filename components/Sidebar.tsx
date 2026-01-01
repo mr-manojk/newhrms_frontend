@@ -20,8 +20,8 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, pendingApprovalsCount
   return (
     <aside className="hidden md:flex flex-col w-64 shrink-0 bg-slate-900 text-white min-h-screen border-r border-slate-800">
       <div className="p-6 flex items-center gap-3 border-b border-slate-800">
-        <div className="bg-primary-600 p-2 rounded-lg text-white font-black text-xl shadow-lg shadow-primary-900/50">NX</div>
-        <span className="text-xl font-bold tracking-tight">NexusHR</span>
+        <div className="bg-primary-600 p-2 rounded-lg text-white font-black text-xl shadow-lg shadow-primary-900/50">HR</div>
+        <span className="text-xl font-bold tracking-tight">MyHR Cloud</span>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-8 no-scrollbar">

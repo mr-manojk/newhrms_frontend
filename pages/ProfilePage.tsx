@@ -386,7 +386,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ loggedInUser, employees, onUp
                 </section>
                 <section className="space-y-6">
                   <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-50 pb-4">Organization & Reporting</h4>
-                  <EditableField label="Company Name" value="NexusHR Cloud Systems" readOnly={true} />
+                  <EditableField label="Company Name" value="MyHR Cloud Systems" readOnly={true} />
                   <EditableField label="Department" value={localUser.department} readOnly={!isHRorAdmin} onChange={(v: string) => handleInputChange('department', v)} />
                   <EditableField label="Reporting Manager" value={managerName} readOnly={true} />
                   <EditableField label="Employee Status" type="select" options={['Active', 'On Leave', 'Terminated']} value={localUser.employeeStatus || 'Active'} readOnly={!isHRorAdmin} onChange={(v: string) => handleInputChange('employeeStatus', v)} />
