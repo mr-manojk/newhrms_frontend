@@ -1,21 +1,15 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   plugins: [react()],
-  define: {
-    'process.env': {
-      API_KEY: JSON.stringify(process.env.API_KEY || '')
-    },
-    'global': 'window',
-  },
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './'),
+  root: './', // Ensure root is the current directory
+  build: {
+    outDir: 'dist',
+    emptyOutDir: true,
+    rollupOptions: {
+      input: path.resolve(__dirname, 'index.html'),
     },
   },
   server: {
@@ -30,11 +24,5 @@ export default defineConfig({
         changeOrigin: true,
       }
     }
-  },
-  build: {
-    outDir: 'dist',
-    emptyOutDir: true,
-    sourcemap: false,
-    minify: 'terser',
   }
 });
