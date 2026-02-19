@@ -22,7 +22,21 @@ export default defineConfig({
   },
   server: {
     port: 3000,
-    open: true
+    open: true,
+    proxy: {
+      // Proxy API requests to the local backend during development
+      '/api': {
+        target: 'https://node-mysql-api-lhbg.onrender.com',
+        changeOrigin: true,
+        secure: false,
+      },
+      // Proxy uploads to the local backend during development
+      '/uploads': {
+        target: 'https://node-mysql-api-lhbg.onrender.com',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
   },
   build: {
     outDir: 'dist',
