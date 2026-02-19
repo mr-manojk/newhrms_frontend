@@ -1,28 +1,27 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
-  root: './', // Ensure root is the current directory
-  build: {
-    outDir: 'dist',
-    emptyOutDir: true,
-    rollupOptions: {
-      input: path.resolve(__dirname, 'index.html'),
-    },
-  },
+  // Vite automatically uses the directory containing this file as the root
+  // and finds index.html as the entry point by default.
   server: {
     port: 3000,
     proxy: {
       '/api': {
-        target: 'https://node-mysql-api-lhbg.onrender.com',
+        target: 'http://localhost:5000',
         changeOrigin: true,
       },
       '/uploads': {
-        target: 'https://node-mysql-api-lhbg.onrender.com',
+        target: 'http://localhost:5000',
         changeOrigin: true,
       }
     }
+  },
+  build: {
+    outDir: 'dist',
+    emptyOutDir: true,
+    sourcemap: false,
+    minify: 'terser',
   }
 });
