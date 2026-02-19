@@ -135,3 +135,18 @@ export const INITIAL_LEAVE_REQUESTS: LeaveRequest[] = [
     appliedDate: '2024-06-01'
   }
 ];
+
+export const DEFAULT_SALARY_COMPONENTS: SalaryComponent[] = [
+  { id: 'basic', name: 'Basic Salary', type: 'EARNING' },
+  { id: 'hra', name: 'House Rent Allowance', type: 'EARNING' },
+  { id: 'attendance_bonus', name: 'Attendance Bonus', type: 'EARNING' },
+  { id: 'transport_allowance', name: 'Transport Allowance', type: 'EARNING' },
+  { id: 'conveyance_allowance', name: 'Conveyance Allowance', type: 'EARNING' },
+  { id: 'medical_allowance', name: 'Medical Allowance', type: 'EARNING' },
+  { id: 'performance_incentives', name: 'Performance Incentives', type: 'EARNING' },
+  { id: 'internet_allowance', name: 'Internet Allowance', type: 'EARNING' },
+  { id: 'pf', name: 'Provident Fund', type: 'DEDUCTION' },
+  { id: 'tax', name: 'Income Tax', type: 'DEDUCTION' },
+  { id: 'pt', name: 'Professional Tax', type: 'DEDUCTION' }
+];
+

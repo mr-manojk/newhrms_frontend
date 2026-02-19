@@ -1,5 +1,5 @@
 
-import { Holiday, SystemConfig, Notification } from '../types';
+import { Holiday, SystemConfig, Notification, RosterAssignment } from '../types';
 import { API_BASE_URL, handleResponse, cleanDateStr, safeFetch } from './apiClient';
 
 export const NOTIFICATIONS_UPDATED_EVENT = 'nexushr_notifications_updated';
@@ -7,9 +7,14 @@ export const NOTIFICATIONS_UPDATED_EVENT = 'nexushr_notifications_updated';
 export const systemService = {
   async checkHealth(): Promise<boolean> {
     try {
-      const res: Response = await fetch(`${API_BASE_URL}/health`, { method: 'GET' });
+      // Explicitly check the /api/health endpoint
+      const res: Response = await fetch(`${API_BASE_URL}/health`, { 
+        method: 'GET',
+        headers: { 'Accept': 'application/json' }
+      });
       return res.ok;
-    } catch {
+    } catch (err) {
+      console.warn("Health check failed:", err);
       return false;
     }
   },
@@ -33,6 +38,25 @@ export const systemService = {
       body: JSON.stringify({ holidays })
     });
     if (res) await handleResponse(res, "saveHolidays");
+  },
+
+  async getRosters(): Promise<RosterAssignment[]> {
+    const res: Response | null = await safeFetch(`${API_BASE_URL}/rosters`, { cache: 'no-store' });
+    if (!res) return [];
+    const serverData = await handleResponse(res, "getRosters");
+    return (serverData || []).map((r: any) => ({
+      ...r,
+      date: cleanDateStr(r.date)
+    }));
+  },
+
+  async saveRosters(rosters: RosterAssignment[]): Promise<void> {
+    const res: Response | null = await safeFetch(`${API_BASE_URL}/rosters/bulk`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rosters })
+    });
+    if (res) await handleResponse(res, "saveRosters");
   },
 
   async getConfig(): Promise<SystemConfig | null> {

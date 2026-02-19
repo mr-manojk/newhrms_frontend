@@ -1,7 +1,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { User, Attendance, SystemConfig, Holiday, UserRole } from '../types';
+import { User, Attendance, SystemConfig, Holiday, UserRole, LeaveRequest, LeaveStatus } from '../types';
 import { resolveAvatarUrl } from '../services/apiClient';
 
 interface AttendancePageProps {
@@ -10,9 +10,10 @@ interface AttendancePageProps {
   systemConfig: SystemConfig;
   holidays: Holiday[];
   employees: User[];
+  leaveRequests: LeaveRequest[];
 }
 
-const AttendancePage: React.FC<AttendancePageProps> = ({ loggedInUser, attendances, systemConfig, holidays, employees }) => {
+const AttendancePage: React.FC<AttendancePageProps> = ({ loggedInUser, attendances, systemConfig, holidays, employees, leaveRequests }) => {
   const { id } = useParams<{ id?: string }>();
   const [viewMode, setViewMode] = useState<'table' | 'calendar'>('table');
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -47,10 +48,12 @@ const AttendancePage: React.FC<AttendancePageProps> = ({ loggedInUser, attendanc
       } else {
         const existing = dailyMap[log.date];
         const currentTotal = (existing.accumulatedTime || 0) + (log.accumulatedTime || 0);
+        const currentBreak = (existing.breakTime || 0) + (log.breakTime || 0);
         dailyMap[log.date] = {
           ...existing,
           checkOut: log.checkOut || existing.checkOut,
           accumulatedTime: currentTotal,
+          breakTime: currentBreak,
           lateReason: existing.lateReason || log.lateReason,
           latitude: existing.latitude || log.latitude,
           longitude: existing.longitude || log.longitude
@@ -66,15 +69,16 @@ const AttendancePage: React.FC<AttendancePageProps> = ({ loggedInUser, attendanc
     const isWeekend = day === 0 || day === 6;
     const holiday = holidays.find(h => h.date === dateStr);
 
+    // 1. Check if an attendance record exists (Present)
     if (log) {
       try {
         if (log.lateReason) return { label: 'LATE', class: 'bg-rose-100 text-rose-700' };
-        const shiftStart = targetUser.shiftStart || systemConfig.workStartTime;
+        const shiftStart = targetUser.shiftStart || systemConfig?.workStartTime || "09:00";
         const [checkH, checkM] = log.checkIn.split(':').map(Number);
         const [shiftH, shiftM] = shiftStart.split(':').map(Number);
         const checkMinutes = checkH * 60 + checkM;
         const shiftMinutes = shiftH * 60 + shiftM;
-        const grace = systemConfig.gracePeriodMinutes || 0;
+        const grace = systemConfig?.gracePeriodMinutes || 0;
         if (checkMinutes > shiftMinutes + grace) return { label: 'LATE', class: 'bg-rose-100 text-rose-700' };
         return { label: 'ON TIME', class: 'bg-emerald-100 text-emerald-700' };
       } catch {
@@ -82,11 +86,25 @@ const AttendancePage: React.FC<AttendancePageProps> = ({ loggedInUser, attendanc
       }
     }
 
+    // 2. Check for Approved Leave
+    const onLeave = (leaveRequests || []).find(lr => 
+      String(lr.userId) === String(targetUser.id) && 
+      lr.status === LeaveStatus.APPROVED && 
+      dateStr >= lr.startDate && dateStr <= lr.endDate
+    );
+    if (onLeave) return { label: 'ON LEAVE', class: 'bg-amber-50 text-amber-600 border border-amber-100' };
+
+    // 3. Check for Holiday
     if (holiday) return { label: holiday.name, class: 'bg-amber-100 text-amber-700' };
+
+    // 4. Check for Weekend
     if (isWeekend) return { label: 'DAY OFF', class: 'bg-slate-100 text-slate-500' };
     
+    // 5. Check for future date
     const today = new Date().toISOString().split('T')[0];
     if (dateStr > today) return { label: '--', class: 'text-slate-300' };
+
+    // 6. Default to Absent
     return { label: 'ABSENT', class: 'bg-rose-50 text-rose-300' };
   };
 
@@ -104,7 +122,7 @@ const AttendancePage: React.FC<AttendancePageProps> = ({ loggedInUser, attendanc
       alert("No attendance records to export.");
       return;
     }
-    const headers = ['Date', 'First Check In', 'Last Check Out', 'Total Working Time', 'Location', ...(canSeeGPS ? ['Latitude', 'Longitude'] : []), 'Status', 'Late Reason'];
+    const headers = ['Date', 'First Check In', 'Last Check Out', 'Total Working Time', 'Break Time', 'Location', ...(canSeeGPS ? ['Latitude', 'Longitude'] : []), 'Status', 'Late Reason'];
     const rows = userLogsAggregated.map(log => {
       const status = getAttendanceStatus(log.date, log);
       const baseRow = [
@@ -112,6 +130,7 @@ const AttendancePage: React.FC<AttendancePageProps> = ({ loggedInUser, attendanc
         `"${log.checkIn}"`,
         `"${log.checkOut || '--:--'}"`,
         `"${formatSeconds(log.accumulatedTime || 0)}"`,
+        `"${formatSeconds(log.breakTime || 0)}"`,
         `"${log.location || 'Remote'}"`
       ];
       
@@ -217,7 +236,8 @@ const AttendancePage: React.FC<AttendancePageProps> = ({ loggedInUser, attendanc
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Check In</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Check Out</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Duration</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Location & GPS</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Break</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Location</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Status</th>
                 </tr>
               </thead>
@@ -238,6 +258,9 @@ const AttendancePage: React.FC<AttendancePageProps> = ({ loggedInUser, attendanc
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 font-mono">{(!log.checkOut || log.checkOut === '00:00:00') ? '--:--' : log.checkOut}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-primary-600 font-mono">
                         {formatSeconds(log.accumulatedTime || 0)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-400 font-mono">
+                        {log.breakTime && log.breakTime > 0 ? formatSeconds(log.breakTime) : '--:--:--'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex flex-col gap-1">
@@ -272,7 +295,7 @@ const AttendancePage: React.FC<AttendancePageProps> = ({ loggedInUser, attendanc
                 })}
                 {userLogsAggregated.length === 0 && (
                    <tr>
-                    <td colSpan={6} className="px-6 py-20 text-center text-slate-400 italic">No attendance records found for this period.</td>
+                    <td colSpan={7} className="px-6 py-20 text-center text-slate-400 italic">No attendance records found for this period.</td>
                   </tr>
                 )}
               </tbody>

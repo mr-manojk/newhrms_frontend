@@ -21,7 +21,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, pendingApprovalsCount
     <aside className="hidden md:flex flex-col w-64 shrink-0 bg-slate-900 text-white min-h-screen border-r border-slate-800">
       <div className="p-6 flex items-center gap-3 border-b border-slate-800">
         <div className="bg-primary-600 p-2 rounded-lg text-white font-black text-xl shadow-lg shadow-primary-900/50">HR</div>
-        <span className="text-xl font-bold tracking-tight">MyHR Cloud</span>
+        <span className="text-xl font-bold tracking-tight">MyHR</span>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-8 no-scrollbar">
@@ -33,6 +33,8 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, pendingApprovalsCount
             <SidebarLink to="/profile" icon="fa-id-card" label="My Profile" />
             <SidebarLink id="tour-attendance-link" to="/attendance" icon="fa-clock" label="My Attendance" />
             <SidebarLink id="tour-leave-link" to="/leave" icon="fa-calendar-alt" label="My Leaves" />
+            <SidebarLink to="/my-payroll" icon="fa-wallet" label="My Pay & Expenses" />
+            <SidebarLink to="/performance" icon="fa-chart-line" label="Performance" />
             <SidebarLink to="/holidays" icon="fa-calendar-day" label="Holidays" />
           </div>
         </div>
@@ -51,6 +53,8 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, pendingApprovalsCount
           <div>
             <h3 className="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-4">Management</h3>
             <div className="space-y-1">
+              <SidebarLink to="/roster" icon="fa-calendar-week" label="Roster Scheduling" />
+              <SidebarLink to="/payroll" icon="fa-money-check-dollar" label="Payroll Admin" />
               <SidebarLink 
                 to="/approvals" 
                 icon="fa-check-double" 

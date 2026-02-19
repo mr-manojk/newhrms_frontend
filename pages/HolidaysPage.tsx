@@ -1,6 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { User, UserRole, Holiday } from '../types';
+import ModalPortal from '../components/ModalPortal';
 
 interface HolidaysPageProps {
   user: User;
@@ -14,13 +15,11 @@ const HolidaysPage: React.FC<HolidaysPageProps> = ({ user, holidays, onAddHolida
   const [holidayForm, setHolidayForm] = useState({ name: '', date: '', description: '' });
   const [holidayToDelete, setHolidayToDelete] = useState<string | null>(null);
   
-  // Grouping and expansion state
   const currentYear = new Date().getFullYear();
   const [expandedYears, setExpandedYears] = useState<Record<number, boolean>>({});
 
   const canModify = user.role === UserRole.ADMIN || user.role === UserRole.HR;
 
-  // Group holidays by year and sort them
   const groupedHolidays = useMemo(() => {
     const groups: Record<number, Holiday[]> = {};
     
@@ -31,7 +30,6 @@ const HolidaysPage: React.FC<HolidaysPageProps> = ({ user, holidays, onAddHolida
       groups[year].push(h);
     });
 
-    // Sort holidays within each year
     Object.keys(groups).forEach(year => {
       groups[Number(year)].sort((a, b) => a.date.localeCompare(b.date));
     });
@@ -39,20 +37,17 @@ const HolidaysPage: React.FC<HolidaysPageProps> = ({ user, holidays, onAddHolida
     return groups;
   }, [holidays, currentYear]);
 
-  // Sorted list of years (descending to show newest/current first)
   const sortedYears = useMemo(() => {
     return Object.keys(groupedHolidays)
       .map(Number)
       .sort((a, b) => b - a);
   }, [groupedHolidays]);
 
-  // Initial expansion logic: Expand current year, collapse others
   useEffect(() => {
     const initialExpansion: Record<number, boolean> = {};
     sortedYears.forEach(year => {
       initialExpansion[year] = year === currentYear;
     });
-    // If current year doesn't exist in data, expand the first available year
     if (sortedYears.length > 0 && !initialExpansion[currentYear]) {
         initialExpansion[sortedYears[0]] = true;
     }
@@ -95,16 +90,16 @@ const HolidaysPage: React.FC<HolidaysPageProps> = ({ user, holidays, onAddHolida
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 pb-20">
+    <div className="max-w-5xl mx-auto space-y-6 pb-20">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Organization Holidays</h1>
-          <p className="text-slate-500 font-medium">Official company holidays and observed events calendar.</p>
+          <h1 className="text-xl font-bold text-slate-900">Organization Holidays</h1>
+          <p className="text-slate-500 text-xs font-medium mt-0.5">Official company calendar and observed events.</p>
         </div>
         {canModify && (
           <button 
             onClick={() => setShowAddModal(true)}
-            className="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 flex items-center gap-2"
+            className="bg-primary-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-primary-700 transition-all shadow-sm flex items-center gap-2"
           >
             <i className="fas fa-plus"></i>
             Add Holiday
@@ -112,34 +107,32 @@ const HolidaysPage: React.FC<HolidaysPageProps> = ({ user, holidays, onAddHolida
         )}
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         {sortedYears.length > 0 ? (
           sortedYears.map((year) => {
             const isExpanded = expandedYears[year];
             const yearHolidays = groupedHolidays[year];
             
             return (
-              <div key={year} className="bg-white rounded-[2rem] border border-slate-200 overflow-hidden shadow-sm transition-all duration-300">
-                {/* Year Header Accordion Trigger */}
+              <div key={year} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
                 <button 
                   onClick={() => toggleYear(year)}
-                  className={`w-full px-8 py-5 flex items-center justify-between transition-colors ${isExpanded ? 'bg-slate-900 text-white' : 'bg-white text-slate-800 hover:bg-slate-50'}`}
+                  className={`w-full px-6 py-4 flex items-center justify-between transition-colors ${isExpanded ? 'bg-slate-50 border-b border-slate-100' : 'bg-white hover:bg-slate-50'}`}
                 >
-                  <div className="flex items-center gap-4">
-                    <span className="text-2xl font-black tracking-tighter">{year}</span>
-                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${isExpanded ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg font-bold text-slate-800">{year}</span>
+                    <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider ${isExpanded ? 'bg-primary-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
                       {yearHolidays.length} Events
                     </span>
-                    {year === currentYear && !isExpanded && (
-                      <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest animate-pulse ml-2">Current Year</span>
+                    {year === currentYear && (
+                      <span className="text-[9px] font-bold text-primary-600 uppercase tracking-wider">Active Year</span>
                     )}
                   </div>
-                  <i className={`fas fa-chevron-down transition-transform duration-300 ${isExpanded ? 'rotate-180 text-indigo-400' : 'text-slate-300'}`}></i>
+                  <i className={`fas fa-chevron-down text-xs transition-transform duration-300 ${isExpanded ? 'rotate-180 text-primary-600' : 'text-slate-300'}`}></i>
                 </button>
 
-                {/* Holidays List Content */}
                 {isExpanded && (
-                  <div className="p-8 space-y-4 animate-in slide-in-from-top-2 duration-300">
+                  <div className="p-2 md:p-4 space-y-2 animate-in slide-in-from-top-1 duration-200">
                     {yearHolidays.map((h) => {
                       const dateInfo = formatDateInfo(h.date);
                       const isPast = new Date(h.date) < new Date(new Date().setHours(0,0,0,0));
@@ -147,35 +140,32 @@ const HolidaysPage: React.FC<HolidaysPageProps> = ({ user, holidays, onAddHolida
                       return (
                         <div 
                           key={h.id} 
-                          className={`rounded-3xl border border-slate-100 p-5 flex flex-col sm:flex-row items-center gap-6 transition-all hover:bg-slate-50 ${isPast ? 'opacity-60' : ''}`}
+                          className={`rounded-xl border border-slate-50 p-3 md:p-4 flex items-center gap-4 transition-all hover:bg-slate-50 group ${isPast ? 'opacity-50' : ''}`}
                         >
-                          {/* Date Block */}
-                          <div className="w-16 h-16 bg-slate-50 rounded-2xl flex flex-col items-center justify-center shrink-0 border border-slate-100 font-bold group-hover:bg-white transition-colors">
-                            <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">{dateInfo.month}</span>
-                            <span className="text-xl font-black text-slate-800">{dateInfo.day}</span>
+                          <div className="w-14 h-14 bg-slate-50 rounded-xl flex flex-col items-center justify-center shrink-0 border border-slate-100 group-hover:bg-white transition-colors">
+                            <span className="text-[8px] font-bold text-primary-600 uppercase tracking-widest leading-none mb-0.5">{dateInfo.month}</span>
+                            <span className="text-lg font-bold text-slate-800 leading-none">{dateInfo.day}</span>
                           </div>
 
-                          {/* Content */}
-                          <div className="flex-1 text-center sm:text-left min-w-0">
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-0.5">
-                              <h3 className="text-base font-black text-slate-800 truncate">{h.name}</h3>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <h3 className="text-sm font-bold text-slate-800 truncate">{h.name}</h3>
                               {isPast && (
-                                <span className="w-fit mx-auto sm:mx-0 text-[8px] font-black uppercase bg-slate-100 text-slate-400 px-2 py-0.5 rounded tracking-widest">Observed</span>
+                                <span className="text-[8px] font-bold uppercase text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">Past</span>
                               )}
                             </div>
-                            <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-1">{dateInfo.weekday}</p>
+                            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">{dateInfo.weekday}</p>
                             {h.description && (
-                              <p className="text-xs text-slate-500 font-medium leading-relaxed max-w-2xl">{h.description}</p>
+                              <p className="text-xs text-slate-500 mt-1 line-clamp-1">{h.description}</p>
                             )}
                           </div>
 
-                          {/* Actions */}
                           {canModify && (
                             <button 
                               onClick={() => setHolidayToDelete(h.id)}
-                              className="p-3 text-slate-200 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
+                              className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
                             >
-                              <i className="fas fa-trash-alt text-sm"></i>
+                              <i className="fas fa-trash-alt text-[10px]"></i>
                             </button>
                           )}
                         </div>
@@ -187,97 +177,93 @@ const HolidaysPage: React.FC<HolidaysPageProps> = ({ user, holidays, onAddHolida
             );
           })
         ) : (
-          <div className="py-32 bg-white rounded-[2.5rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center px-6">
-            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6 text-slate-200 text-3xl">
-              <i className="fas fa-calendar-times"></i>
+          <div className="py-20 bg-white rounded-3xl border-2 border-dashed border-slate-100 flex flex-col items-center justify-center text-center px-6">
+            <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-4 text-slate-200">
+              <i className="fas fa-calendar-times text-xl"></i>
             </div>
-            <h3 className="text-xl font-bold text-slate-800">No Holidays Listed</h3>
-            <p className="text-slate-500 max-w-xs mt-2">The organization hasn't added any upcoming holidays to the schedule yet.</p>
+            <h3 className="text-sm font-bold text-slate-800">No Holidays Listed</h3>
+            <p className="text-slate-400 text-xs mt-1">The organization hasn't added any upcoming holidays yet.</p>
           </div>
         )}
       </div>
 
       {/* Add Holiday Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in duration-200">
-            <div className="px-8 py-6 bg-slate-900 text-white flex items-center justify-between">
-              <h3 className="font-bold text-lg">Register Holiday</h3>
-              <button onClick={() => setShowAddModal(false)} className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors">
-                <i className="fas fa-times"></i>
-              </button>
-            </div>
-            <form onSubmit={handleHolidaySubmit} className="p-8 space-y-5">
-              <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Event Name</label>
-                <input 
-                  type="text" 
-                  placeholder="e.g. Annual Retreat"
-                  required
-                  value={holidayForm.name}
-                  onChange={e => setHolidayForm({...holidayForm, name: e.target.value})}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-bold"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Date</label>
-                <input 
-                  type="date" 
-                  required
-                  value={holidayForm.date}
-                  onChange={e => setHolidayForm({...holidayForm, date: e.target.value})}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-bold"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Context / Description</label>
-                <textarea 
-                  placeholder="Optional details..."
-                  value={holidayForm.description}
-                  onChange={e => setHolidayForm({...holidayForm, description: e.target.value})}
-                  rows={3}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all resize-none text-sm font-medium"
-                />
-              </div>
-              <div className="flex gap-4 pt-4">
-                <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 py-3 text-slate-400 font-bold hover:bg-slate-50 rounded-xl transition-all">Cancel</button>
-                <button type="submit" className="flex-[2] py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-xl shadow-indigo-100">Add Holiday</button>
-              </div>
-            </form>
+      <ModalPortal isOpen={showAddModal} onClose={() => setShowAddModal(false)}>
+        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in duration-200 border border-slate-100">
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h3 className="font-bold text-sm text-slate-800">New Holiday Entry</h3>
+            <button onClick={() => setShowAddModal(false)} className="text-slate-300 hover:text-slate-500">
+              <i className="fas fa-times text-xs"></i>
+            </button>
           </div>
+          <form onSubmit={handleHolidaySubmit} className="p-6 space-y-4">
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Holiday Name</label>
+              <input 
+                type="text" 
+                placeholder="e.g. Founder's Day"
+                required
+                value={holidayForm.name}
+                onChange={e => setHolidayForm({...holidayForm, name: e.target.value})}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-primary-500/10 focus:border-primary-500 transition-all text-sm font-medium text-slate-700"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Observance Date</label>
+              <input 
+                type="date" 
+                required
+                value={holidayForm.date}
+                onChange={e => setHolidayForm({...holidayForm, date: e.target.value})}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-primary-500/10 focus:border-primary-500 transition-all text-sm font-medium text-slate-700"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Details (Optional)</label>
+              <textarea 
+                placeholder="Brief description..."
+                value={holidayForm.description}
+                onChange={e => setHolidayForm({...holidayForm, description: e.target.value})}
+                rows={2}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-primary-500/10 focus:border-primary-500 transition-all resize-none text-sm font-medium text-slate-700"
+              />
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 py-2.5 text-slate-400 font-bold text-xs">Cancel</button>
+              <button type="submit" className="flex-[2] py-2.5 bg-primary-600 text-white font-bold text-xs uppercase rounded-xl shadow-md hover:bg-primary-700 transition-all">Add Event</button>
+            </div>
+          </form>
         </div>
-      )}
+      </ModalPortal>
 
       {/* Delete Confirmation Modal */}
-      {holidayToDelete && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
-          <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="p-10 text-center">
-              <div className="w-20 h-20 bg-rose-50 text-rose-500 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-lg shadow-rose-50">
-                <i className="fas fa-trash-alt text-2xl"></i>
-              </div>
-              <h3 className="text-2xl font-black text-slate-900 mb-2">Delete Event?</h3>
-              <p className="text-slate-500 mb-8 leading-relaxed">
-                Are you sure you want to remove <span className="font-bold text-slate-800">"{holidayBeingDeleted?.name}"</span>? 
-              </p>
-              <div className="flex gap-4">
-                <button 
-                  onClick={() => setHolidayToDelete(null)}
-                  className="flex-1 px-4 py-4 bg-slate-100 text-slate-600 font-black uppercase tracking-widest text-[11px] rounded-2xl hover:bg-slate-200 transition-all"
-                >
-                  Keep It
-                </button>
-                <button 
-                  onClick={confirmDelete}
-                  className="flex-1 px-4 py-4 bg-rose-600 text-white font-black uppercase tracking-widest text-[11px] rounded-2xl hover:bg-rose-700 transition-all shadow-lg shadow-rose-200"
-                >
-                  Delete
-                </button>
-              </div>
+      <ModalPortal isOpen={!!holidayToDelete} onClose={() => setHolidayToDelete(null)}>
+        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xs overflow-hidden animate-in fade-in zoom-in duration-200">
+          <div className="p-8 text-center">
+            <div className="w-12 h-12 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center mx-auto mb-4">
+              <i className="fas fa-trash-alt text-lg"></i>
+            </div>
+            <h3 className="text-lg font-bold text-slate-900 mb-1">Remove Event?</h3>
+            <p className="text-slate-500 text-xs mb-6 px-2">
+              Confirm deletion of <span className="font-bold text-slate-800">"{holidayBeingDeleted?.name}"</span> from the schedule.
+            </p>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setHolidayToDelete(null)}
+                className="flex-1 py-2.5 bg-slate-100 text-slate-600 font-bold text-[10px] uppercase rounded-xl hover:bg-slate-200 transition-all"
+              >
+                Keep
+              </button>
+              <button 
+                onClick={confirmDelete}
+                className="flex-1 py-2.5 bg-rose-600 text-white font-bold text-[10px] uppercase rounded-xl hover:bg-rose-700 transition-all"
+              >
+                Delete
+              </button>
             </div>
           </div>
         </div>
-      )}
+      </ModalPortal>
     </div>
   );
 };

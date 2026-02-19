@@ -25,6 +25,7 @@ const normalizeAttendance = (a: any): Attendance => {
     latitude: a.latitude ? Number(a.latitude) : undefined,
     longitude: a.longitude ? Number(a.longitude) : undefined,
     accumulatedTime: a.accumulatedTime ? Number(a.accumulatedTime) : 0,
+    breakTime: a.breakTime ? Number(a.breakTime) : 0,
     lastClockIn: a.lastClockIn || (isValidCheckIn ? ciStr : '00:00:00'),
     lateReason: a.lateReason || a.late_reason || undefined
   };
@@ -46,6 +47,7 @@ export const attendanceService = {
       checkIn: (a.checkIn && a.checkIn !== 'null' && a.checkIn !== '') ? a.checkIn : '00:00:00',
       checkOut: (a.checkOut && String(a.checkOut).includes(':') && a.checkOut !== '00:00:00' && a.checkOut !== 'null') ? a.checkOut : null,
       accumulatedTime: a.accumulatedTime || 0,
+      breakTime: a.breakTime || 0,
       location: a.location || null,
       latitude: a.latitude || null,
       longitude: a.longitude || null,

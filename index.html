@@ -11,7 +11,6 @@
       theme: {
         extend: {
           colors: {
-            // Updated primary theme to Emerald Green for a warmer, growth-oriented HR feel
             primary: {
               50: '#ecfdf5',
               100: '#d1fae5',
@@ -32,18 +31,52 @@
   </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
     body {
       font-family: 'Inter', sans-serif;
     }
-    /* Hide scrollbar for Chrome, Safari and Opera */
     .no-scrollbar::-webkit-scrollbar {
       display: none;
     }
-    /* Hide scrollbar for IE, Edge and Firefox */
     .no-scrollbar {
-      -ms-overflow-style: none;  /* IE and Edge */
-      scrollbar-width: none;  /* Firefox */
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* PDF Print Styles */
+    @media print {
+      @page {
+        size: A4;
+        margin: 5mm; /* Decreased from 10mm to prevent clipping */
+      }
+
+      /* Hide everything by default */
+      body * {
+        visibility: hidden !important;
+      }
+
+      /* Show only the dedicated PDF container */
+      #pdf-export-view, #pdf-export-view * {
+        visibility: visible !important;
+      }
+
+      #pdf-export-view {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100% !important;
+        display: block !important;
+        background: white !important;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+    }
+    
+    /* Ensure the PDF view is hidden during normal app usage */
+    #pdf-export-view {
+      display: none;
     }
   </style>
 <script type="importmap">
@@ -57,14 +90,15 @@
     "react": "https://esm.sh/react@^19.2.3",
     "vite": "https://esm.sh/vite@^7.3.0",
     "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
-    "react-router-dom": "https://esm.sh/react-router-dom@^7.11.0"
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.11.0",
+    "react-dom": "https://esm.sh/react-dom@^19.2.4"
   }
 }
 </script>
 </head>
 <body class="bg-slate-50 text-slate-900">
   <div id="root"></div>
-  <!-- Entry point for the React application -->
+  <div id="portal-root"></div>
   <script type="module" src="./index.tsx"></script>
 </body>
 </html>

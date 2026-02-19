@@ -1,18 +1,14 @@
 
-// Determine if we are in production based on the hostname
-const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+// Base session key constant
+const SESSION_KEY = 'nexushr_active_session';
 
-/**
- * For the full-stack app:
- * - In dev (Vite): /api is proxied to localhost:5000
- * - In prod: We use the explicit backend URL provided to ensure cross-origin functionality
- */
-const PROD_BACKEND_URL = 'https://node-mysql-api-lhbg.onrender.com';
+// loacalhost url
+const PROD_BACKEND_URL = 'http://localhost:5000';
 
-export const API_BASE_URL = isProduction ? `${PROD_BACKEND_URL}/api` : '/api';
+export const API_BASE_URL = `${PROD_BACKEND_URL}/api`;
 
 // Base URL for resolving assets like uploads
-export const ASSET_BASE_URL = isProduction ? PROD_BACKEND_URL : window.location.origin;
+export const ASSET_BASE_URL = PROD_BACKEND_URL;
 
 /**
  * Sanitized response handler.
@@ -21,6 +17,14 @@ export const ASSET_BASE_URL = isProduction ? PROD_BACKEND_URL : window.location.
 export const handleResponse = async (response: Response, context: string): Promise<any> => {
   const contentType = response.headers.get('content-type') || '';
   const isJson = contentType.includes('application/json');
+
+  // Handle unauthorized/expired token
+  if (response.status === 401) {
+    console.warn(`🔒 Session Expired: ${context} returned 401.`);
+    localStorage.removeItem(SESSION_KEY);
+    window.location.href = '/login?expired=true';
+    throw new Error('SESSION_EXPIRED');
+  }
 
   if (!response.ok) {
     const errorBody = await response.text();
@@ -62,21 +66,44 @@ export const handleResponse = async (response: Response, context: string): Promi
 };
 
 /**
- * A safe fetch wrapper that catches network errors.
+ * Helper to retrieve token from current session
+ */
+const getAuthToken = (): string | null => {
+  try {
+    const session = localStorage.getItem(SESSION_KEY);
+    if (!session) return null;
+    const user = JSON.parse(session);
+    return user.token || null;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * A safe fetch wrapper that catches network errors and injects Authorization tokens.
  */
 export const safeFetch = async (url: string, options?: RequestInit): Promise<Response | null> => {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
     
+    const token = getAuthToken();
+    const headers = new Headers(options?.headers || {});
+    
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+
     const response = await fetch(url, {
       ...options,
+      headers,
       signal: controller.signal
     });
     
     clearTimeout(timeoutId);
     return response;
   } catch (error) {
+    console.error("Fetch failed:", error);
     return null;
   }
 };
@@ -102,16 +129,17 @@ export const cleanDateStr = (d: any): string | null => {
 
 /**
  * Resolves avatar and document URLs safely.
- * Points to the remote backend in production instead of the frontend origin.
  */
 export const resolveAvatarUrl = (path: string | undefined) => {
-  if (!path) return 'https://i.pravatar.cc/150?u=unknown';
-  if (path.startsWith('http') || path.startsWith('data:')) return path;
+  if (!path) return 'https://i.pravatar.cc/150?u=unknown'; // Fallback
+  if (path.startsWith('http') || path.startsWith('data:')) return path; // Already a full URL
   
-  // Clean the path to ensure it's a valid relative path
   const cleanPath = path.startsWith('/') ? path.slice(1) : path;
   
-  // In development, Vite proxy handles /uploads locally.
-  // In production, we explicitly point to the remote backend.
+  // If it's a local upload, we prefix it with the Backend URL (http://localhost:5000)
+  if (cleanPath.startsWith('uploads')) {
+    return `${PROD_BACKEND_URL}/${cleanPath}`;
+  }
+  
   return `${ASSET_BASE_URL}/${cleanPath}`;
 };

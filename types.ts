@@ -9,7 +9,8 @@ export enum UserRole {
 export enum LeaveStatus {
   PENDING = 'PENDING',
   APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED'
+  REJECTED = 'REJECTED',
+  CANCELLED = 'CANCELLED'
 }
 
 export enum LeaveType {
@@ -26,6 +27,127 @@ export enum TimesheetStatus {
   REJECTED = 'REJECTED'
 }
 
+export enum GoalPriority {
+  HIGH = 'HIGH',
+  MEDIUM = 'MEDIUM',
+  LOW = 'LOW'
+}
+
+export enum GoalStatus {
+  ON_TRACK = 'ON_TRACK',
+  BEHIND = 'BEHIND',
+  AT_RISK = 'AT_RISK',
+  COMPLETED = 'COMPLETED'
+}
+
+export enum ExpenseStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  PAID = 'PAID'
+}
+
+export interface SalaryComponent {
+  id: string;
+  name: string;
+  type: 'EARNING' | 'DEDUCTION';
+}
+
+export interface SalaryStructure {
+  userId: string;
+  basic?: number;
+  hra?: number;
+  attendanceBonus?: number;
+  transportAllowance?: number;
+  conveyanceAllowance?: number;
+  medicalAllowance?: number;
+  performanceIncentives?: number;
+  internetAllowance?: number;
+  pf?: number;
+  tax?: number;
+  pt?: number;
+  components: Record<string, number>; // Maps custom componentId -> amount
+  lastUpdated: string;
+}
+
+export interface ExpenseRequest {
+  id: string;
+  userId: string;
+  userName: string;
+  category: 'Travel' | 'Food' | 'Equipment' | 'Other';
+  amount: number;
+  date: string;
+  description: string;
+  receiptUrl?: string;
+  status: ExpenseStatus;
+  approvedBy?: string;
+}
+
+export interface BonusIncrement {
+  id: string;
+  userId: string;
+  type: 'BONUS' | 'INCREMENT' | 'ONE_TIME';
+  amount: number;
+  effectiveDate: string;
+  reason: string;
+  isProcessed: boolean;
+}
+
+export interface PayrollRun {
+  id: string;
+  userId: string;
+  month: string; // YYYY-MM
+  year: number;
+  grossSalary: number;
+  netSalary: number;
+  deductions: number;
+  reimbursements: number;
+  bonus: number;
+  status: 'DRAFT' | 'PAID';
+  processedDate?: string;
+  attendanceDays: number;
+  componentBreakdown?: Record<string, number>; // Snapshot of components at run time
+}
+
+export interface Goal {
+  id: string;
+  userId: string;
+  title: string;
+  description: string;
+  priority: GoalPriority;
+  status: GoalStatus;
+  progress: number;
+  dueDate: string;
+}
+
+export interface PerformanceReview {
+  id: string;
+  userId: string;
+  reviewerId: string;
+  cycle: string;
+  status: 'DRAFT' | 'SUBMITTED' | 'FINALIZED';
+  selfRating?: number;
+  managerRating?: number;
+  comments?: string;
+  lastUpdated: string;
+}
+
+export interface ShiftTemplate {
+  id: string;
+  name: string;
+  startTime: string;
+  endTime: string;
+  color: string;
+}
+
+export interface RosterAssignment {
+  id: string;
+  userId: string;
+  date: string;
+  shiftId: string;
+  note?: string;
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -37,7 +159,7 @@ export interface TimesheetEntry {
   id: string;
   userId: string;
   projectId: string;
-  date: string; // YYYY-MM-DD
+  date: string;
   hours: number;
   description?: string;
 }
@@ -45,7 +167,7 @@ export interface TimesheetEntry {
 export interface TimesheetPeriod {
   id: string;
   userId: string;
-  startDate: string; // Monday of the week
+  startDate: string;
   status: TimesheetStatus;
   submittedAt?: string;
   approvedBy?: string;
@@ -71,6 +193,8 @@ export interface BankDetails {
   ifscCode: string;
   panNumber?: string;
   socialSecurityNumber?: string;
+  uanNumber?: string;
+  pfNumber?: string;
 }
 
 export interface UserDocument {
@@ -84,22 +208,19 @@ export interface UserDocument {
 export interface NotificationPreference {
   attendanceReminders: boolean;
   leaveUpdates: boolean;
-  announcements: boolean;
   frequency: 'immediate' | 'daily' | 'weekly';
-  channels: {
-    inApp: boolean;
-    email: boolean;
-  };
+  channels: { inApp: boolean; email: boolean; };
 }
 
 export interface PerformanceFeedback {
   id: string;
+  userId: string;
   fromId: string;
   fromName: string;
   content: string;
   date: string;
   category: 'peer' | 'manager' | 'self';
-  rating: number; // 1-5
+  rating: number;
 }
 
 export interface User {
@@ -108,6 +229,7 @@ export interface User {
   name: string;
   email: string;
   password?: string;
+  token?: string;
   role: UserRole;
   department: string;
   managerId?: string;
@@ -155,6 +277,7 @@ export interface Attendance {
   latitude?: number;
   longitude?: number;
   accumulatedTime?: number;
+  breakTime?: number;
   lastClockIn?: string;
   lateReason?: string;
 }
@@ -171,6 +294,7 @@ export interface LeaveRequest {
   appliedDate: string;
   processedBy?: string;
   processedDate?: string;
+  ccEmail?: string;
 }
 
 export interface LeaveBalance {
@@ -199,9 +323,8 @@ export interface SystemConfig {
   defaultSickLeave: number;
   defaultCasualLeave: number;
   currency: string;
-  githubRepo?: string;
-  githubToken?: string;
-  lastGithubSync?: string;
+  schedulingMode: 'FIXED_SHIFT' | 'WEEKLY_ROSTER';
+  salaryComponents: SalaryComponent[];
 }
 
 export type NotificationType = 'info' | 'success' | 'warning' | 'error';
@@ -214,5 +337,4 @@ export interface Notification {
   type: NotificationType;
   timestamp: string;
   isRead: boolean;
-  link?: string;
 }

@@ -17,6 +17,7 @@ NexusHR is a comprehensive, cloud-ready Human Resource Management System (HRMS) 
 - **Frontend**: React 19, TypeScript, Tailwind CSS
 - **Routing**: React Router 7
 - **Icons**: Font Awesome 6
+- **AI Integration**: Google Gemini API (@google/genai)
 - **Backend Ready**: Pre-configured services for REST API interaction.
 
 ## 🚀 Getting Started

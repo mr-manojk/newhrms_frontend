@@ -3,20 +3,25 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   User, Attendance, LeaveRequest, LeaveStatus, 
   Holiday, SystemConfig, Notification, LeaveBalance, LeaveType,
-  Project, TimesheetEntry, TimesheetPeriod, TimesheetStatus
+  Project, TimesheetEntry, TimesheetPeriod, TimesheetStatus,
+  RosterAssignment, Goal, PerformanceReview, PerformanceFeedback,
+  GoalPriority, GoalStatus,
+  SalaryStructure, ExpenseRequest, BonusIncrement, PayrollRun, ExpenseStatus, SalaryComponent
 } from '../types';
 import { userService } from '../services/userService';
 import { attendanceService } from '../services/attendanceService';
 import { leaveService } from '../services/leaveService';
 import { systemService } from '../services/systemService';
+import { performanceService } from '../services/performanceService';
+import { payrollService } from '../services/payrollService';
 import { MOCK_USERS, INITIAL_LEAVE_REQUESTS } from '../constants';
 
 const SESSION_KEY = 'nexushr_active_session';
 const CACHE_KEY = 'nexushr_offline_cache';
 
 const DEFAULT_CONFIG: SystemConfig = {
-  companyName: "NexusHR Systems",
-  companyDomain: "nexushr.com",
+  companyName: "MyHR Systems",
+  companyDomain: "myhr.com",
   timezone: "UTC+5:30 (IST)",
   workStartTime: "10:00",
   workEndTime: "19:00",
@@ -24,14 +29,10 @@ const DEFAULT_CONFIG: SystemConfig = {
   defaultAnnualLeave: 21,
   defaultSickLeave: 12,
   defaultCasualLeave: 10,
-  currency: "INR"
+  currency: "INR",
+  schedulingMode: 'FIXED_SHIFT',
+  salaryComponents: [] // No longer used from config
 };
-
-const MOCK_PROJECTS: Project[] = [
-  { id: 'p1', name: 'Nexus Cloud Migration', client: 'Internal', status: 'Active' },
-  { id: 'p2', name: 'FinTech App Development', client: 'Alpha Bank', status: 'Active' },
-  { id: 'p3', name: 'Security Audit Q2', client: 'Beta Corp', status: 'On Hold' }
-];
 
 const getISODate = () => {
   const now = new Date();
@@ -44,7 +45,7 @@ const getISODate = () => {
 const getISOTime = () => new Date().toTimeString().split(' ')[0];
 
 const parseTimeOnDate = (dateStr: string, timeStr: string): Date | null => {
-  if (!dateStr || !timeStr || timeStr === '00:00:00' || timeStr === 'null' || timeStr === '--:--' || timeStr === '') return null;
+  if (!dateStr || !timeStr || typeof dateStr !== 'string' || timeStr === '00:00:00' || timeStr === 'null' || timeStr === '--:--' || timeStr === '') return null;
   const d = new Date(`${dateStr.replace(/-/g, '/')} ${timeStr}`);
   return isNaN(d.getTime()) ? null : d;
 };
@@ -70,12 +71,21 @@ export const useHRSystem = () => {
   const [leaveBalances, setLeaveBalances] = useState<LeaveBalance[]>([]);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [systemConfig, setSystemConfig] = useState<SystemConfig>(DEFAULT_CONFIG);
+  const [rosters, setRosters] = useState<RosterAssignment[]>([]);
+  
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [performanceReviews, setPerformanceReviews] = useState<PerformanceReview[]>([]);
+  const [feedback, setFeedback] = useState<PerformanceFeedback[]>([]);
 
-  const [projects] = useState<Project[]>(MOCK_PROJECTS);
+  const [salaryStructures, setSalaryStructures] = useState<SalaryStructure[]>([]);
+  const [expenses, setExpenses] = useState<ExpenseRequest[]>([]);
+  const [bonuses, setBonuses] = useState<BonusIncrement[]>([]);
+  const [payrollRuns, setPayrollRuns] = useState<PayrollRun[]>([]);
+
+  const [projects] = useState<Project[]>([]);
   const [timesheetEntries, setTimesheetEntries] = useState<TimesheetEntry[]>([]);
   const [timesheetPeriods, setTimesheetPeriods] = useState<TimesheetPeriod[]>([]);
 
-  // Use a ref to prevent overlapping sync operations that cause UI flickering
   const syncInProgress = useRef(false);
 
   const saveToCache = (data: any) => {
@@ -106,16 +116,29 @@ export const useHRSystem = () => {
       setIsServerOffline(!isOnline);
       
       if (isOnline) {
-        const [users, att, leaves, holds, config, balances] = await Promise.all([
+        const [
+          users, att, leaves, holds, config, balances, rost, 
+          perfGoals, perfReviews, perfFeedback,
+          salStructs, exps, bns, pyRuns
+        ] = await Promise.all([
           userService.getUsers(),
           attendanceService.getAttendance(),
           leaveService.getLeaves(),
           systemService.getHolidays(),
           systemService.getConfig(),
-          leaveService.getBalances()
+          leaveService.getBalances(),
+          systemService.getRosters(),
+          performanceService.getGoals(),
+          performanceService.getReviews(),
+          performanceService.getFeedback(),
+          payrollService.getSalaryStructures(),
+          payrollService.getExpenses(),
+          payrollService.getBonusIncrements(),
+          payrollService.getPayrollRuns()
         ]);
 
-        const currentConfig = config || DEFAULT_CONFIG;
+        let currentConfig = { ...DEFAULT_CONFIG, ...(config || {}) };
+        
         const currentLeaves = leaves || [];
         const currentHolidays = (holds || []).filter(h => h.frzInd !== true);
         
@@ -142,14 +165,14 @@ export const useHRSystem = () => {
         setHolidays(currentHolidays);
         setSystemConfig(currentConfig);
         setLeaveBalances(accurateBalances);
-
-        // Load timesheets from local storage (currently local-first)
-        const localTS = localStorage.getItem('nexushr_timesheet_data');
-        if (localTS) {
-           const parsed = JSON.parse(localTS);
-           setTimesheetEntries(parsed.entries || []);
-           setTimesheetPeriods(parsed.periods || []);
-        }
+        setRosters(rost || []);
+        setGoals(perfGoals || []);
+        setPerformanceReviews(perfReviews || []);
+        setFeedback(perfFeedback || []);
+        setSalaryStructures(salStructs || []);
+        setExpenses(exps || []);
+        setBonuses(bns || []);
+        setPayrollRuns(pyRuns || []);
 
         saveToCache({
           employees: users || [],
@@ -158,9 +181,14 @@ export const useHRSystem = () => {
           holidays: currentHolidays,
           systemConfig: currentConfig,
           leaveBalances: accurateBalances,
-          projects,
-          timesheetEntries,
-          timesheetPeriods
+          rosters: rost || [],
+          goals: perfGoals || [],
+          performanceReviews: perfReviews || [],
+          feedback: perfFeedback || [],
+          salaryStructures: salStructs || [],
+          expenses: exps || [],
+          bonuses: bns || [],
+          payrollRuns: pyRuns || []
         });
 
         const savedSession = localStorage.getItem(SESSION_KEY);
@@ -168,8 +196,9 @@ export const useHRSystem = () => {
           const localUser = JSON.parse(savedSession);
           const freshUser = (users || []).find(u => String(u.id) === String(localUser.id));
           if (freshUser) {
-            setCurrentUser(freshUser);
-            localStorage.setItem(SESSION_KEY, JSON.stringify(freshUser));
+            const userWithToken = { ...freshUser, token: localUser.token };
+            setCurrentUser(userWithToken);
+            localStorage.setItem(SESSION_KEY, JSON.stringify(userWithToken));
           }
         }
       } else {
@@ -187,49 +216,160 @@ export const useHRSystem = () => {
         holidays: [],
         systemConfig: DEFAULT_CONFIG,
         leaveBalances: [],
-        projects: MOCK_PROJECTS,
         timesheetEntries: [],
-        timesheetPeriods: []
+        timesheetPeriods: [],
+        rosters: [],
+        goals: [],
+        performanceReviews: [],
+        feedback: [],
+        salaryStructures: [],
+        expenses: [],
+        bonuses: [],
+        payrollRuns: []
       };
 
       setEmployees(fallbackData.employees);
       setAttendances(fallbackData.attendances);
       setLeaveRequests(fallbackData.leaveRequests);
       setHolidays((fallbackData.holidays || []).filter((h: any) => h.frzInd !== true));
-      setSystemConfig(fallbackData.systemConfig);
+      setSystemConfig(fallbackData.systemConfig || DEFAULT_CONFIG);
       setLeaveBalances(fallbackData.leaveBalances);
-      setTimesheetEntries(fallbackData.timesheetEntries || []);
-      setTimesheetPeriods(fallbackData.timesheetPeriods || []);
+      setRosters(fallbackData.rosters || []);
+      setGoals(fallbackData.goals || []);
+      setPerformanceReviews(fallbackData.performanceReviews || []);
+      setFeedback(fallbackData.feedback || []);
+      setSalaryStructures(fallbackData.salaryStructures || []);
+      setExpenses(fallbackData.expenses || []);
+      setBonuses(fallbackData.bonuses || []);
+      setPayrollRuns(fallbackData.payrollRuns || []);
 
       const savedSession = localStorage.getItem(SESSION_KEY);
       if (savedSession) {
         const localUser = JSON.parse(savedSession);
         const user = fallbackData.employees.find((u: any) => String(u.id) === String(localUser.id));
-        if (user) setCurrentUser(user);
+        if (user) setCurrentUser({ ...user, token: localUser.token });
       }
     } finally {
       setIsLoading(false);
       setIsSyncing(false);
       syncInProgress.current = false;
     }
-    // We remove dependencies that are updated inside loadData to prevent infinite loops
   }, []);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  const saveTimesheetEntries = (entries: TimesheetEntry[], period: TimesheetPeriod) => {
-    const updatedEntries = [...timesheetEntries.filter(e => e.userId !== period.userId || !entries.some(ne => ne.date === e.date)) , ...entries];
-    const updatedPeriods = [...timesheetPeriods.filter(p => p.id !== period.id), period];
-    
-    setTimesheetEntries(updatedEntries);
-    setTimesheetPeriods(updatedPeriods);
-    
-    localStorage.setItem('nexushr_timesheet_data', JSON.stringify({
-       entries: updatedEntries,
-       periods: updatedPeriods
-    }));
+  const handleUpdateSalaryStructure = async (structure: SalaryStructure) => {
+    setIsSyncing(true);
+    try {
+      const current = await payrollService.getSalaryStructures();
+      const updated = [...current.filter(s => String(s.userId) !== String(structure.userId)), structure];
+      await payrollService.saveSalaryStructures(updated);
+      await loadData(true);
+    } catch (e) {
+      console.error("Salary structure update failed:", e);
+      setIsSyncing(false);
+    }
+  };
+
+  const handleAddExpense = async (expense: Partial<ExpenseRequest>) => {
+    if (!currentUser) return;
+    setIsSyncing(true);
+    try {
+      const newExp = {
+        id: Math.random().toString(36).substr(2, 9),
+        userId: currentUser.id,
+        userName: currentUser.name,
+        category: expense.category || 'Other',
+        amount: expense.amount || 0,
+        date: expense.date || getISODate(),
+        description: expense.description || '',
+        status: ExpenseStatus.PENDING,
+        ...expense
+      } as ExpenseRequest;
+      const current = await payrollService.getExpenses();
+      await payrollService.saveExpenses([newExp, ...current]);
+      await loadData(true);
+    } catch (e) {
+      console.error(e);
+      setIsSyncing(false);
+    }
+  };
+
+  const handleUpdateExpenseStatus = async (id: string, status: ExpenseStatus) => {
+    setIsSyncing(true);
+    try {
+      const current = await payrollService.getExpenses();
+      const updated = current.map(e => e.id === id ? { ...e, status, approvedBy: currentUser?.name } : e);
+      await payrollService.saveExpenses(updated);
+      await loadData(true);
+    } catch (e) {
+      console.error(e);
+      setIsSyncing(false);
+    }
+  };
+
+  const handleAddBonus = async (bonus: Partial<BonusIncrement>) => {
+    setIsSyncing(true);
+    try {
+      const newB: BonusIncrement = {
+        id: Math.random().toString(36).substr(2, 9),
+        userId: bonus.userId || '',
+        type: bonus.type || 'BONUS',
+        amount: bonus.amount || 0,
+        effectiveDate: bonus.effectiveDate || getISODate(),
+        reason: bonus.reason || '',
+        isProcessed: false
+      };
+      const current = await payrollService.getBonusIncrements();
+      await payrollService.saveBonusIncrements([newB, ...current]);
+      await loadData(true);
+    } catch (e) {
+      console.error(e);
+      setIsSyncing(false);
+    }
+  };
+
+  const handleRunPayroll = async (month: string, year: number, runs: PayrollRun[]) => {
+    setIsSyncing(true);
+    try {
+      const current = await payrollService.getPayrollRuns();
+      await payrollService.savePayrollRuns([...runs, ...current]);
+      await loadData(true);
+    } catch (e) {
+      console.error(e);
+      setIsSyncing(false);
+    }
+  };
+
+  const saveRoster = async (assignments: RosterAssignment[]) => {
+    setIsSyncing(true);
+    try {
+      await systemService.saveRosters(assignments);
+      await loadData(true);
+    } catch (e) {
+      console.error("Failed to save roster:", e);
+      setIsSyncing(false);
+    }
+  };
+
+  const saveTimesheetEntries = async (newEntries: TimesheetEntry[], period: TimesheetPeriod) => {
+    setIsSyncing(true);
+    try {
+      setTimesheetEntries(prev => {
+        const filtered = prev.filter(e => !newEntries.some(ne => ne.date === e.date && ne.projectId === e.projectId));
+        return [...filtered, ...newEntries];
+      });
+      setTimesheetPeriods(prev => {
+        const filtered = prev.filter(p => p.id !== period.id);
+        return [...filtered, period];
+      });
+      await loadData(true);
+    } catch (e) {
+      console.error("Failed to save timesheet entries:", e);
+      setIsSyncing(false);
+    }
   };
 
   const checkIn = async (location?: string, lateReason?: string, latitude?: number, longitude?: number) => {
@@ -247,13 +387,20 @@ export const useHRSystem = () => {
         const existing = current[existingIdx];
         const coStr = String(existing.checkOut || '');
         const isCurrentlyActive = !coStr.includes(':') || coStr === '00:00:00' || coStr === 'null' || coStr === '';
-        
         if (isCurrentlyActive) return;
+
+        const lastCheckOut = parseTimeOnDate(existing.date, coStr);
+        const newCheckIn = parseTimeOnDate(todayStr, timeStr);
+        let breakDuration = 0;
+        if (lastCheckOut && newCheckIn) {
+          breakDuration = Math.max(0, Math.floor((newCheckIn.getTime() - lastCheckOut.getTime()) / 1000));
+        }
 
         const resumedRecord: Attendance = {
           ...existing,
           checkOut: undefined,
           lastClockIn: timeStr,
+          breakTime: (existing.breakTime || 0) + breakDuration,
           location: location || existing.location,
           latitude: latitude || existing.latitude,
           longitude: longitude || existing.longitude,
@@ -269,6 +416,7 @@ export const useHRSystem = () => {
           checkIn: timeStr, 
           lastClockIn: timeStr,
           accumulatedTime: 0,
+          breakTime: 0,
           location,
           latitude,
           longitude,
@@ -294,7 +442,6 @@ export const useHRSystem = () => {
         String(a.userId) === String(currentUser.id) && 
         (!a.checkOut || a.checkOut === '00:00:00' || a.checkOut === 'null' || a.checkOut === '')
       );
-      
       if (activeIdx === -1) return;
       
       const record = current[activeIdx];
@@ -333,6 +480,7 @@ export const useHRSystem = () => {
         reason: req.reason || '',
         status: LeaveStatus.PENDING,
         appliedDate: getISODate(),
+        ccEmail: req.ccEmail || undefined
       };
       const current = await leaveService.getLeaves();
       await leaveService.saveLeaves([newReq, ...current]);
@@ -397,9 +545,9 @@ export const useHRSystem = () => {
 
   const handleUpdateUser = async (user: User) => {
     setIsSyncing(true);
-    const next = employees.map(e => e.id === user.id ? user : e);
+    const next = employees.map(e => String(e.id) === String(user.id) ? user : e);
     setEmployees(next);
-    if (user.id === currentUser?.id) setCurrentUser(user);
+    if (String(user.id) === String(currentUser?.id)) setCurrentUser({ ...user, token: currentUser?.token });
     try {
       await userService.saveUsers(next);
       await loadData(true);
@@ -474,7 +622,6 @@ export const useHRSystem = () => {
         timestamp: new Date().toISOString(),
         isRead: false
       }));
-      
       const existing = await systemService.getNotifications();
       await systemService.saveNotifications([...newNotifs, ...existing]);
       await loadData(true);
@@ -486,8 +633,10 @@ export const useHRSystem = () => {
   const handleLogin = (email: string, password?: string) => {
     const user = employees.find(u => u.email.toLowerCase() === email.toLowerCase());
     if (!user || (password && user.password && user.password !== password)) return false;
-    setCurrentUser(user);
-    localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+    const mockToken = `nx_auth_${Math.random().toString(36).substring(2)}_${Date.now()}`;
+    const userWithToken = { ...user, token: mockToken };
+    setCurrentUser(userWithToken);
+    localStorage.setItem(SESSION_KEY, JSON.stringify(userWithToken));
     loadData(true);
     return true;
   };
@@ -510,10 +659,88 @@ export const useHRSystem = () => {
     }
   };
 
+  const handleAddGoal = async (goal: Partial<Goal>) => {
+    if (!currentUser) return;
+    setIsSyncing(true);
+    try {
+      const newGoal: Goal = {
+        id: Math.random().toString(36).substr(2, 9),
+        userId: currentUser.id,
+        title: goal.title || 'Untitled Goal',
+        description: goal.description || '',
+        priority: goal.priority || GoalPriority.MEDIUM,
+        status: goal.status || GoalStatus.ON_TRACK,
+        progress: goal.progress || 0,
+        dueDate: goal.dueDate || getISODate()
+      };
+      const current = await performanceService.getGoals();
+      await performanceService.saveGoals([newGoal, ...current]);
+      await loadData(true);
+    } catch (e) {
+      console.error("Failed to save goal:", e);
+      setIsSyncing(false);
+    }
+  };
+
+  const handleAddFeedback = async (fb: Partial<PerformanceFeedback>) => {
+    if (!currentUser) return;
+    setIsSyncing(true);
+    try {
+      const newFb: PerformanceFeedback = {
+        id: Math.random().toString(36).substr(2, 9),
+        userId: fb.userId || currentUser.id, 
+        fromId: currentUser.id,
+        fromName: currentUser.name,
+        content: fb.content || '',
+        date: getISODate(),
+        category: fb.category || 'peer',
+        rating: fb.rating || 5
+      } as PerformanceFeedback;
+      const current = await performanceService.getFeedback();
+      await performanceService.saveFeedback([newFb, ...current]);
+      await loadData(true);
+    } catch (e) {
+      console.error("Failed to save feedback:", e);
+      setIsSyncing(false);
+    }
+  };
+
+  const handleAddReview = async (review: Partial<PerformanceReview>) => {
+    if (!currentUser) return;
+    setIsSyncing(true);
+    try {
+      const newReview: PerformanceReview = {
+        id: Math.random().toString(36).substr(2, 9),
+        userId: currentUser.id,
+        reviewerId: review.reviewerId || '',
+        cycle: review.cycle || 'Annual 2025',
+        status: 'DRAFT',
+        lastUpdated: new Date().toISOString(),
+      };
+      const current = await performanceService.getReviews();
+      await performanceService.saveReviews([newReview, ...current]);
+      await loadData(true);
+    } catch (e) {
+      console.error("Failed to request review:", e);
+      setIsSyncing(false);
+    }
+  };
+
   return {
     currentUser, isLoading, isSyncing, isServerOffline,
     employees, setEmployees: handleUpdateEmployees, attendances, leaveRequests, leaveBalances, holidays, systemConfig,
+    rosters, saveRoster,
     projects, timesheetEntries, timesheetPeriods, saveTimesheetEntries,
+    goals, performanceReviews, feedback,
+    onAddGoal: handleAddGoal,
+    onAddFeedback: handleAddFeedback,
+    onAddReview: handleAddReview,
+    salaryStructures, expenses, bonuses, payrollRuns,
+    onUpdateSalaryStructure: handleUpdateSalaryStructure,
+    onAddExpense: handleAddExpense,
+    onUpdateExpenseStatus: handleUpdateExpenseStatus,
+    onAddBonus: handleAddBonus,
+    onRunPayroll: handleRunPayroll,
     checkIn, checkOut, applyLeave, updateLeaveStatus, handleUpdateUser, handleLogin,
     onBroadcast: handleBroadcast,
     onUpdateLeaveBalances: handleUpdateLeaveBalances,

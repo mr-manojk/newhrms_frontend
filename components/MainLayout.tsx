@@ -55,7 +55,14 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         isOffline={isOffline} 
         pendingApprovalsCount={pendingApprovalsCount}
       />
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+        {isOffline && (
+          <div className="bg-amber-500 text-white px-4 py-1 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] shadow-lg relative z-[60] animate-in slide-in-from-top duration-500">
+            <i className="fas fa-wifi-slash"></i>
+            <span>Offline Mode: Working on cached data. Backend unreachable.</span>
+          </div>
+        )}
+        
         <Navbar 
           user={user} 
           employees={employees}
@@ -66,7 +73,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
           onClearAll={clearAll}
           isSyncing={isSyncing}
         />
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 no-scrollbar">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">
           {children}
         </main>
       </div>
