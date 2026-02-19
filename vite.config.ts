@@ -25,6 +25,8 @@ export default defineConfig({
     open: true
   },
   build: {
+    outDir: 'dist',
+    emptyOutDir: true,
     sourcemap: false,
     minify: 'terser',
     terserOptions: {
