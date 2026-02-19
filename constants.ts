@@ -1,5 +1,5 @@
 
-import { User, UserRole, LeaveType, LeaveStatus, LeaveRequest } from './types';
+import { User, UserRole, LeaveType, LeaveStatus, LeaveRequest, SalaryComponent } from './types';
 
 const today = new Date().toISOString().split('T')[0];
 
