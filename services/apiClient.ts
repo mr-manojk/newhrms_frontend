@@ -7,7 +7,7 @@ const SESSION_KEY = 'nexushr_active_session';
  * For separate hosting (Static Frontend + Web Service Backend):
  * Use VITE_API_URL environment variable.
  */
-const BACKEND_URL = import.meta.env.VITE_API_URL || '';
+const BACKEND_URL = 'https://node-mysql-api-lhbg.onrender.com';
 
 export const API_BASE_URL = `${BACKEND_URL}/api`;
 
