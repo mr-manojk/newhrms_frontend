@@ -95,7 +95,7 @@ const LeaveManagement: React.FC<LeaveManagementProps> = ({
   };
 
   const getReviewableRequests = () => {
-    let filtered = [];
+    let filtered: LeaveRequest[] = [];
     if (isHRorAdmin) {
       filtered = leaveRequests.filter(r => r.userId !== user.id);
     } else if (isManager) {

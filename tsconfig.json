@@ -18,9 +18,11 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"]
-    }
+    },
+    "types": ["vite/client"]
   },
   "include": [
+    "vite-env.d.ts",
     "App.tsx",
     "index.tsx",
     "constants.ts",

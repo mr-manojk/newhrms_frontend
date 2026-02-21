@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { User } from '../types';
-import { askNexusAI } from '../geminiService';
+
 
 interface Message {
   role: 'user' | 'ai';
@@ -33,10 +33,7 @@ const HRAssistant: React.FC<{ user: User }> = ({ user }) => {
     setIsLoading(true);
 
     const context = `User Name: ${user.name}, Role: ${user.role}, Dept: ${user.department}, EmployeeID: ${user.employeeId}`;
-    const aiResponse = await askNexusAI(userMsg, context);
-    
-    setMessages(prev => [...prev, { role: 'ai', text: aiResponse || 'No response' }]);
-    setIsLoading(false);
+
   };
 
   return (

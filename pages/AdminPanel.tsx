@@ -516,13 +516,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                     <AddressForm 
                       label="Current Residence" 
                       data={employeeFormData.currentAddress} 
-                      onChange={(f, v) => handleNestedInputChange('currentAddress', f, v)} 
+                      onChange={(f: string, v: any) => handleNestedInputChange('currentAddress', f, v)} 
                     />
                     <div className="h-px bg-slate-100 w-full"></div>
                     <AddressForm 
                       label="Permanent Address" 
                       data={employeeFormData.permanentAddress} 
-                      onChange={(f, v) => handleNestedInputChange('permanentAddress', f, v)} 
+                      onChange={(f: string, v: any) => handleNestedInputChange('permanentAddress', f, v)} 
                     />
                   </div>
                 )}
