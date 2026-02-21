@@ -2,13 +2,17 @@
 // Base session key constant
 const SESSION_KEY = 'nexushr_active_session';
 
-// We use relative paths. 
-// In development, Vite proxy handles /api and /uploads.
-// In production, the Express server handles them.
-export const API_BASE_URL = '/api';
+/**
+ * Backend URL configuration.
+ * For separate hosting (Static Frontend + Web Service Backend):
+ * Use VITE_API_URL environment variable.
+ */
+const BACKEND_URL = import.meta.env.VITE_API_URL || '';
+
+export const API_BASE_URL = `${BACKEND_URL}/api`;
 
 // Base URL for resolving assets like uploads
-export const ASSET_BASE_URL = '';
+export const ASSET_BASE_URL = BACKEND_URL;
 
 /**
  * Sanitized response handler.
@@ -136,9 +140,9 @@ export const resolveAvatarUrl = (path: string | undefined) => {
   
   const cleanPath = path.startsWith('/') ? path.slice(1) : path;
   
-  // If it's a local upload, we use relative path
+  // If it's a local upload, we prefix it with the Backend URL
   if (cleanPath.startsWith('uploads')) {
-    return `/${cleanPath}`;
+    return `${BACKEND_URL}/${cleanPath}`;
   }
   
   return `${ASSET_BASE_URL}/${cleanPath}`;
