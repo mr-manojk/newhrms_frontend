@@ -52,7 +52,7 @@ const App: React.FC = () => {
   if (isLoading) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
       <div className="w-16 h-16 border-4 border-primary-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-      <p className="text-slate-500 font-bold tracking-tight">Syncing Cloud Database...</p>
+      <p className="text-slate-500 font-bold tracking-tight">Establishing secure connection...</p>
     </div>
   );
 
