@@ -38,32 +38,35 @@ const ResetPasswordPage: React.FC = () => {
   const strengthScore = Object.values(passwordStrength).filter(Boolean).length;
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsProcessing(true);
-    setError(null);
-    
-    try {
-      const res = await safeFetch(`${API_BASE_URL}/users/forgot-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
+  e.preventDefault();
+  setIsProcessing(true);
+  setError(null);
 
-      if (res) {
-        const data = await handleResponse(res, "forgotPassword");
-        // We only receive actualCode if the server is in development mode
-        setActualCode(data.demoCode || '');
-        setStep('code');
-        setResendTimer(120);
-      } else {
-        throw new Error("Server connection failed.");
-      }
-    } catch (err: any) {
-      setError(err.message || "Could not initiate recovery.");
-    } finally {
-      setIsProcessing(false);
+  try {
+    const res = await safeFetch(`${API_BASE_URL}/users/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(errorText || `Server returned ${res.status}`);
     }
-  };
+
+    const data = await res.json();
+
+    setActualCode(data.demoCode || '');
+    setStep('code');
+    setResendTimer(120);
+
+  } catch (err: any) {
+    console.error("Forgot password error:", err);
+    setError(err.message || "Could not initiate recovery.");
+  } finally {
+    setIsProcessing(false);
+  }
+};
 
   const handleCodeChange = (index: number, value: string) => {
     if (value !== '' && !/^\d+$/.test(value)) return;
@@ -107,38 +110,43 @@ const ResetPasswordPage: React.FC = () => {
   };
 
   const handlePasswordReset = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newPassword !== confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
-    if (strengthScore < 3) {
-      setError("Please choose a stronger password.");
-      return;
+  e.preventDefault();
+
+  if (newPassword !== confirmPassword) {
+    setError("Passwords do not match.");
+    return;
+  }
+
+  if (strengthScore < 3) {
+    setError("Please choose a stronger password.");
+    return;
+  }
+
+  setIsProcessing(true);
+  setError(null);
+
+  try {
+    const res = await safeFetch(`${API_BASE_URL}/users/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, newPassword })
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(errorText || `Server returned ${res.status}`);
     }
 
-    setIsProcessing(true);
-    setError(null);
+    await res.json();
+    setStep('success');
 
-    try {
-      const res = await safeFetch(`${API_BASE_URL}/users/reset-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, newPassword })
-      });
-
-      if (res) {
-        await handleResponse(res, "resetPassword");
-        setStep('success');
-      } else {
-        throw new Error("Cloud connectivity lost. Please try again.");
-      }
-    } catch (err: any) {
-      setError(err.message || "Could not reset password.");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+  } catch (err: any) {
+    console.error("Reset password error:", err);
+    setError(err.message || "Could not reset password.");
+  } finally {
+    setIsProcessing(false);
+  }
+};
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-6 selection:bg-emerald-100">

@@ -86,14 +86,17 @@ const getAuthToken = (): string | null => {
 /**
  * A safe fetch wrapper that catches network errors and injects Authorization tokens.
  */
-export const safeFetch = async (url: string, options?: RequestInit): Promise<Response | null> => {
+export const safeFetch = async (
+  url: string,
+  options?: RequestInit
+): Promise<Response> => {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
-    
+
     const token = getAuthToken();
     const headers = new Headers(options?.headers || {});
-    
+
     if (token) {
       headers.set('Authorization', `Bearer ${token}`);
     }
@@ -101,14 +104,25 @@ export const safeFetch = async (url: string, options?: RequestInit): Promise<Res
     const response = await fetch(url, {
       ...options,
       headers,
-      signal: controller.signal
+      signal: controller.signal,
     });
-    
+
     clearTimeout(timeoutId);
+
     return response;
-  } catch (error) {
+
+  } catch (error: any) {
     console.error("Fetch failed:", error);
-    return null;
+
+    if (error.name === "AbortError") {
+      throw new Error("Request timed out. Server took too long to respond.");
+    }
+
+    if (error instanceof TypeError) {
+      throw new Error("Network error. Unable to reach server.");
+    }
+
+    throw new Error(error.message || "Unexpected network error.");
   }
 };
 
