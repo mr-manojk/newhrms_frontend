@@ -54,7 +54,7 @@ const ResetPasswordPage: React.FC = () => {
         // We only receive actualCode if the server is in development mode
         setActualCode(data.demoCode || '');
         setStep('code');
-        setResendTimer(60);
+        setResendTimer(120);
       } else {
         throw new Error("Server connection failed.");
       }
